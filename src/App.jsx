@@ -1,94 +1,82 @@
 import { StyledApp } from 'App.styled';
 import { ImageGallery } from './components/ImageGallery/ImageGallery';
-import { Loader } from './components/Loader/Loader';
+
 import { Button } from './components/Button/Button';
-import React, { Component } from 'react';
+import React, { useEffect, useState } from 'react';
 import { getGallery } from './Pixabay/PixabayAPI';
-import Searchbar from './components/Searchbar/Searchbar';
-import Modal from './components/Modal/Modal';
 
-export  class App extends Component {
-  state = {
-    loading: false,
-    gallery: [],
-    isOpen: false,
-    page: 1,
-    per_page: 12,
-    q: '',
-    currentImg: null,
-    error: null,
-    maxImg: 0,
-  };
+import { Loader } from './components/Loader/Loader';
+import { Modal } from './components/Modal/Modal';
+import { Searchbar } from './components/Searchbar/Searchbar';
 
-  async componentDidMount() {
-    this.setState({ loading: true });
-    try {
-      const { page, per_page, q } = this.state;
-      await getGallery(page, per_page, q);
-    } catch (error) {
-      console.log(error);
-    } finally {
-      this.setState({ loading: false });
+export const App = () => {
+  const [loading, setLoading] = useState(false);
+  const [gallery, setGallery] = useState([]);
+  const [isOpen, setIsOpen] = useState(false);
+  const [page, setPage] = useState(1);
+  const [per_page] = useState(12);
+  const [q, setQ] = useState('');
+  const [currentImg, setCurrentImg] = useState(null);
+  const [error, setError] = useState(null);
+  const [maxImg, SetMaxImg] = useState(0);
+
+  useEffect(() => {
+    if (!q) {
+      return;
     }
-  }
-  async componentDidUpdate(_, prevState) {
-    const { page, per_page, q } = this.state;
 
-    if (prevState.page !== page || prevState.q !== q) {
-      this.setState({ loading: true });
+    const fetchGallery = async () => {
+      setLoading(true);
       try {
-        const { hits, totalHits } = await getGallery({ page, per_page, q });
-        const maxImg = Math.ceil(totalHits / per_page);
-        this.setState(prev => ({
-          gallery: [...prev.gallery, ...hits],
-          maxImg,
-        }));
-      } catch (error) {
-        this.setState({ error: error });
-      } finally {
-        this.setState({ loading: false });
-      }
-    }
-  }
-  onLoadMore = () => {     
-      this.setState(prev => ({ page: prev.page + 1 }));
-    }
-  
-  handleOpenModal = img => {
-    this.setState(prev => ({ isOpen: !prev.isOpen, currentImg: img }));
-  };
-  handleChangeQuery = str => {
-    this.setState({ q: str, gallery: [], page: 1 });
-  };
-  closeModal = () => {
-    this.setState({ isOpen: false });
-  };
-  render() {
-    const { loading, isOpen, gallery, currentImg, error, q, maxImg, page } =
-      this.state;
-    return (
-      <>
-        <StyledApp>
-          <Searchbar onChangeQuery={this.handleChangeQuery} />
+        const data = await getGallery({ q, per_page, page });
+        const maxImg = Math.ceil(data.totalHits / per_page);
+        setGallery(prev => [...prev, ...data.hits]);
 
-          {loading && !gallery.length ? (
-            <Loader />
-          ) : (
-            <ImageGallery
-              data={gallery}
-              handleOpenModal={this.handleOpenModal}
-            />
-          )}
-          {error && <h2>Something went wrong</h2>}
-          {!gallery.length && q && !loading && (
-            <h2>I didn't find anything, try again</h2>
-          )}
-          {isOpen && <Modal close={this.closeModal} currentImg={currentImg} />}
-        </StyledApp>
-        {gallery.length > 0 && page < maxImg && (
-          <Button title="Load More" onLoadMore={this.onLoadMore} />
+        SetMaxImg(maxImg);
+      } catch (error) {
+        setError(error);
+      } finally {
+        setLoading(false);
+      }
+    };
+    fetchGallery();
+  }, [q, page, per_page]);
+
+  const onLoadMore = () => {
+    setPage(prev => prev + 1);
+  };
+  const handleOpenModal = img => {
+    setIsOpen(prev => !prev);
+    setCurrentImg(img);
+  };
+  const handleChangeQuery = str => {
+    setQ(str);
+    setGallery([]);
+    setPage(1);
+  };
+  const closeModal = () => {
+    setIsOpen(false);
+  };
+
+  return (
+    <>
+      <StyledApp>
+        <Searchbar onChangeQuery={handleChangeQuery} />
+
+        {loading && !gallery.length ? (
+          <Loader />
+        ) : (
+          <ImageGallery data={gallery} handleOpenModal={handleOpenModal} />
         )}
-      </>
-    );
-  }
-}
+        {error && <h2>Something went wrong</h2>}
+        {!gallery.length && q && !loading && (
+          <h2>I didn't find anything, try again</h2>
+        )}
+        {isOpen && <Modal close={closeModal} currentImg={currentImg} />}
+      </StyledApp>
+      {gallery.length > 0 && page < maxImg && (
+        <Button title="Load More" onLoadMore={onLoadMore} />
+      )}
+    </>
+  );
+};
