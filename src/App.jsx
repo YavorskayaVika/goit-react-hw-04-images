@@ -18,7 +18,7 @@ export const App = () => {
   const [q, setQ] = useState('');
   const [currentImg, setCurrentImg] = useState(null);
   const [error, setError] = useState(null);
-  const [maxImg, SetMaxImg] = useState(0);
+  const [maxImg, setMaxImg] = useState(0);
 
   useEffect(() => {
     if (!q) {
@@ -32,7 +32,7 @@ export const App = () => {
         const maxImg = Math.ceil(data.totalHits / per_page);
         setGallery(prev => [...prev, ...data.hits]);
 
-        SetMaxImg(maxImg);
+        setMaxImg(maxImg);
       } catch (error) {
         setError(error);
       } finally {

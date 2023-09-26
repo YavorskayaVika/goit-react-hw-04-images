@@ -34,8 +34,3 @@ Modal.propTypes = {
   currentImg: PropTypes.string,
   close: PropTypes.func,
 };
-
-Modal.propTypes = {
-  currentImg: PropTypes.string,
-  close: PropTypes.func,
-};
